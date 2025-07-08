@@ -6,13 +6,129 @@
   <title>Facturación PWA</title>
   <link rel="manifest" href="manifest.json">
   <link rel="stylesheet" href="css/style.css">
-  <meta name="theme-color" content="#4CAF50" />
+  <meta name="theme-color" content="#4CAF50">
 </head>
 <body>
   <h1>Facturación de Productos</h1>
-  <div id="facturas-container"></div>
-  
-  <script src="js/app.js"></script>
+
+  <section>
+    <h2>Registrar Cliente</h2>
+    <input type="text" id="clienteNombre" placeholder="Nombre del cliente">
+    <button onclick="registrarCliente()">Agregar Cliente</button>
+  </section>
+
+  <section>
+    <h2>Registrar Producto</h2>
+    <input type="text" id="productoNombre" placeholder="Nombre del producto">
+    <input type="number" id="productoPrecio" placeholder="Precio">
+    <button onclick="registrarProducto()">Agregar Producto</button>
+  </section>
+
+  <section>
+    <h2>Registrar Factura</h2>
+    <select id="selectCliente"></select>
+    <select id="selectProducto"></select>
+    <input type="number" id="cantidad" placeholder="Cantidad">
+    <button onclick="registrarFactura()">Generar Factura</button>
+  </section>
+
+  <hr>
+
+  <section>
+    <h2>Facturas Registradas</h2>
+    <div id="facturas-container"></div>
+  </section>
+
+  <script>
+    let clientes = JSON.parse(localStorage.getItem("clientes")) || [];
+    let productos = JSON.parse(localStorage.getItem("productos")) || [];
+    let facturas = JSON.parse(localStorage.getItem("facturas")) || [];
+
+    function actualizarSelects() {
+      const selectCliente = document.getElementById("selectCliente");
+      const selectProducto = document.getElementById("selectProducto");
+      selectCliente.innerHTML = "";
+      selectProducto.innerHTML = "";
+
+      clientes.forEach((cliente, index) => {
+        const option = document.createElement("option");
+        option.value = index;
+        option.textContent = cliente;
+        selectCliente.appendChild(option);
+      });
+
+      productos.forEach((producto, index) => {
+        const option = document.createElement("option");
+        option.value = index;
+        option.textContent = `${producto.nombre} ($${producto.precio})`;
+        selectProducto.appendChild(option);
+      });
+    }
+
+    function registrarCliente() {
+      const nombre = document.getElementById("clienteNombre").value;
+      if (nombre) {
+        clientes.push(nombre);
+        localStorage.setItem("clientes", JSON.stringify(clientes));
+        actualizarSelects();
+        document.getElementById("clienteNombre").value = "";
+      }
+    }
+
+    function registrarProducto() {
+      const nombre = document.getElementById("productoNombre").value;
+      const precio = parseFloat(document.getElementById("productoPrecio").value);
+      if (nombre && !isNaN(precio)) {
+        productos.push({ nombre, precio });
+        localStorage.setItem("productos", JSON.stringify(productos));
+        actualizarSelects();
+        document.getElementById("productoNombre").value = "";
+        document.getElementById("productoPrecio").value = "";
+      }
+    }
+
+    function registrarFactura() {
+      const clienteIdx = document.getElementById("selectCliente").value;
+      const productoIdx = document.getElementById("selectProducto").value;
+      const cantidad = parseInt(document.getElementById("cantidad").value);
+      if (clienteIdx !== "" && productoIdx !== "" && cantidad > 0) {
+        const cliente = clientes[clienteIdx];
+        const producto = productos[productoIdx];
+        const total = producto.precio * cantidad;
+        const factura = {
+          id: facturas.length + 1,
+          cliente,
+          producto: producto.nombre,
+          cantidad,
+          total
+        };
+        facturas.push(factura);
+        localStorage.setItem("facturas", JSON.stringify(facturas));
+        mostrarFacturas();
+        document.getElementById("cantidad").value = "";
+      }
+    }
+
+    function mostrarFacturas() {
+      const contenedor = document.getElementById("facturas-container");
+      contenedor.innerHTML = "";
+      facturas.forEach(factura => {
+        const div = document.createElement("div");
+        div.innerHTML = `<strong>ID:</strong> ${factura.id} <br>
+                         <strong>Cliente:</strong> ${factura.cliente} <br>
+                         <strong>Producto:</strong> ${factura.producto} <br>
+                         <strong>Cantidad:</strong> ${factura.cantidad} <br>
+                         <strong>Total:</strong> $${factura.total} <hr>`;
+        contenedor.appendChild(div);
+      });
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+      actualizarSelects();
+      mostrarFacturas();
+    });
+  </script>
+
   <script>
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('sw.js')
